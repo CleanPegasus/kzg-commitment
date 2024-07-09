@@ -1,3 +1,4 @@
+
 use ark_bls12_381::{Bls12_381, Config, Fr as F, G1Affine, G1Projective, G2Affine, G2Projective};
 use ark_ec::{
     bls12::{G1Prepared, G2Prepared},
@@ -5,7 +6,7 @@ use ark_ec::{
     AffineRepr, CurveGroup,
 };
 use ark_ff::{Field, UniformRand, Zero};
-use ark_poly::{polynomial, univariate::DensePolynomial, DenseUVPolynomial, Polynomial};
+use ark_poly::{polynomial, univariate::{DensePolynomial, DenseOrSparsePolynomial}, DenseUVPolynomial, Polynomial,};
 use ark_std::{rand, One};
 
 struct KZGCommitment {
@@ -23,20 +24,37 @@ impl KZGCommitment {
     }
 
     fn lagrange_interpolation(points: &Vec<(F, F)>) -> DensePolynomial<F> {
-        let mut result = DensePolynomial::zero();
+        let mut result: DensePolynomial<F> = DensePolynomial::zero();
 
-        for (i, &(x_i, y_i)) in points.iter().enumerate() {
+        for (index, &(x_i, y_i)) in points.into_iter().enumerate() {
             let mut term = DensePolynomial::from_coefficients_vec(vec![y_i]);
-
             for (j, &(x_j, _)) in points.iter().enumerate() {
-                if i != j {
-                    let denominator: F = x_i - x_j;
-                    let numerator = DensePolynomial::from_coefficients_vec(vec![-x_j, F::one()]);
-                    let scaled_numerator =
-                        Self::scale_polynomial(&numerator, &denominator.inverse().unwrap());
-                    term = &term * &scaled_numerator;
+                if j != index {
+                    let scalar = (x_i - x_j).inverse().unwrap();
+                    let numerator = DensePolynomial::from_coefficients_vec(vec![-x_j * scalar, F::one() * scalar]);
+                    term = &term * &numerator;
                 }
             }
+
+            result += &term;
+        }
+        result
+    }
+
+    fn lagrange(points: &Vec<(F, F)>) -> DensePolynomial<F> {
+
+        let mut result: DensePolynomial<F> = DensePolynomial::zero();
+
+        for (index, &(x_i, y_i)) in points.into_iter().enumerate() {
+            let mut term = DensePolynomial::from_coefficients_vec(vec![y_i]);
+            for (j, &(x_j, _)) in points.iter().enumerate() {
+                if j != index {
+                    let scalar = (x_i - x_j).inverse().unwrap();
+                    let numerator = DensePolynomial::from_coefficients_vec(vec![-x_j * scalar, F::one() * scalar]);
+                    term = &term * &numerator;
+                }
+            }
+
             result += &term;
         }
         result
@@ -58,7 +76,9 @@ impl KZGCommitment {
 
     fn vector_to_polynomial(vector: Vec<F>) -> DensePolynomial<F> {
         let x_s: Vec<F> = (0..vector.len()).map(|val| F::from(val as u32)).collect();
-        let points: Vec<(F, F)> = vector.into_iter().zip(x_s.into_iter()).collect();
+        dbg!(&x_s);
+        let points: Vec<(F, F)> = x_s.into_iter().zip(vector.into_iter()).collect();
+        dbg!(&points);
         println!("{:?}", Self::lagrange_interpolation(&points));
         Self::lagrange_interpolation(&points)
     }
@@ -94,10 +114,12 @@ impl KZGCommitment {
         let mut denominator = DensePolynomial::from_coefficients_vec(vec![F::from(1)]);
         for (x, _) in points {
             denominator = &denominator
-                * &DensePolynomial::from_coefficients_vec(vec![F::from(1), F::from(-1) * x]);
+                * &DensePolynomial::from_coefficients_vec(vec![-*x, F::from(1)]);
         }
 
-        let (q, r) = Self::polynomial_division(&numerator, &denominator);
+        let (q, r) = DenseOrSparsePolynomial::from(numerator).divide_with_q_and_r(&DenseOrSparsePolynomial::from(denominator)).unwrap();
+        assert_eq!(r, DensePolynomial::zero(), "Cannot generate valid proof");
+
 
         self.evaluate_polynomial_at_g1_setup(&q)
     }
@@ -108,7 +130,7 @@ impl KZGCommitment {
         let mut vanishing_polynomial = DensePolynomial::from_coefficients_vec(vec![F::from(1)]);
         for (x, _) in points {
             vanishing_polynomial = &vanishing_polynomial
-                * &DensePolynomial::from_coefficients_vec(vec![F::from(1), F::from(-1) * x]);
+                * &DensePolynomial::from_coefficients_vec(vec![ -*x, F::from(1)]);
         }
 
         let z_s: G2Affine = self.evaluate_polynomial_at_g2_setup(&vanishing_polynomial);
@@ -121,36 +143,4 @@ impl KZGCommitment {
         lhs == rhs
     }
 
-    fn polynomial_division(
-        numerator: &DensePolynomial<F>,
-        denominator: &DensePolynomial<F>,
-    ) -> (DensePolynomial<F>, DensePolynomial<F>) {
-        let mut quotient = DensePolynomial::zero();
-        let mut remainder = numerator.clone();
-
-        while remainder.degree() >= denominator.degree() {
-            let lead_coeff =
-                remainder.coeffs().last().unwrap() / denominator.coeffs().last().unwrap();
-            let degree_diff = remainder.degree() - denominator.degree();
-            let mut term: DensePolynomial<_> = DensePolynomial::from_coefficients_vec(
-                vec![F::zero(); degree_diff]
-                    .into_iter()
-                    .chain(vec![lead_coeff])
-                    .collect(),
-            );
-            quotient += &term;
-            remainder -= &(&term * denominator);
-        }
-
-        (quotient, remainder)
-    }
-
-    fn scale_polynomial(polynomial: &DensePolynomial<F>, scalar: &F) -> DensePolynomial<F> {
-        let new_coeffs: Vec<F> = polynomial
-            .coeffs()
-            .into_iter()
-            .map(|coeff: &F| *coeff * scalar)
-            .collect();
-        DensePolynomial::from_coefficients_vec(new_coeffs)
-    }
 }
