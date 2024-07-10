@@ -106,15 +106,16 @@ impl KZGCommitment {
     pub fn generate_proof(
         &self,
         polynomial: &DensePolynomial<F>,
-        points: &Vec<(F, F)>,
+        points: &Vec<(i32, i32)>,
     ) -> Result<G1Affine, ProofError> {
         // lagrange interpolation
-        let point_polynomial = Self::lagrange_interpolation(&points);
+        let points_ff: Vec<(F, F)> = points.into_iter().map(|&(x, y)| (F::from(x), F::from(y))).collect();
+        let point_polynomial = Self::lagrange_interpolation(&points_ff);
         let numerator = polynomial - &point_polynomial;
         let mut denominator = DensePolynomial::from_coefficients_vec(vec![F::from(1)]);
-        for (x, _) in points {
+        for (x, _) in points_ff {
             denominator =
-                &denominator * &DensePolynomial::from_coefficients_vec(vec![-*x, F::from(1)]);
+                &denominator * &DensePolynomial::from_coefficients_vec(vec![-x, F::from(1)]);
         }
         let (q, r) = DenseOrSparsePolynomial::from(numerator)
             .divide_with_q_and_r(&DenseOrSparsePolynomial::from(denominator))
@@ -130,15 +131,15 @@ impl KZGCommitment {
     pub fn verify_proof(
         &self,
         commitment: &G1Affine,
-        points: &Vec<(F, F)>,
+        points: &Vec<(i32, i32)>,
         proof: &G1Affine,
     ) -> bool {
-        let point_polynomial = Self::lagrange_interpolation(&points);
-
+        let points_ff: Vec<(F, F)> = points.into_iter().map(|&(x, y)| (F::from(x), F::from(y))).collect();
+        let point_polynomial = Self::lagrange_interpolation(&points_ff);
         let mut vanishing_polynomial = DensePolynomial::from_coefficients_vec(vec![F::from(1)]);
-        for (x, _) in points {
+        for (x, _) in points_ff {
             vanishing_polynomial = &vanishing_polynomial
-                * &DensePolynomial::from_coefficients_vec(vec![-*x, F::from(1)]);
+                * &DensePolynomial::from_coefficients_vec(vec![-x, F::from(1)]);
         }
 
         let z_s: G2Affine = self.evaluate_polynomial_at_g2_setup(&vanishing_polynomial);
@@ -171,8 +172,8 @@ mod tests {
         let random_points = random_points(&vector);
         for (x, y) in random_points {
             assert_eq!(
-                polynomial.evaluate(&x),
-                y,
+                polynomial.evaluate(&F::from(x)),
+                F::from(y),
                 "Vector interpolation is wrong"
             );
         }
@@ -233,7 +234,7 @@ mod tests {
         (0..length).map(|_| rng.gen_range(-1000..=1000)).collect()
     }
 
-    fn random_points(vec: &Vec<i32>) -> Vec<(F, F)> {
+    fn random_points(vec: &Vec<i32>) -> Vec<(i32, i32)> {
         let mut rng = rand::thread_rng();
         let count = rng.gen_range(1..vec.len());
         println!("Fetching {} points", count);
@@ -241,7 +242,7 @@ mod tests {
             .enumerate()
             .collect::<Vec<(usize, &i32)>>()
             .choose_multiple(&mut rng, count)
-            .map(|&(index, item)| (F::from(index as i32), F::from(item.clone())))
+            .map(|&(index, item)| (index as i32, item.clone()))
             .collect()
     }
 }
