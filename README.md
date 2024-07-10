@@ -49,10 +49,10 @@ cargo test
 - `test_invalid_proof_verification`: Tests the verification of an invalid proof and ensures the correct error is returned.
 
 ### TODO
-[ ] Use BigInt for vectors instead of i32
-[ ] Add support for precomputed powers_of_tau (trusted_setup)
-[ ] Add more tests for invalid proof verification
-[ ] Add benchmarks
+- [ ] Use BigInt for vectors instead of i32
+- [ ] Add support for precomputed powers_of_tau (trusted_setup)
+- [ ] Add more tests for invalid proof verification
+- [ ] Add benchmarks
 
 
 ### Contributing
