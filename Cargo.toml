@@ -1,7 +1,10 @@
 [package]
 name = "kzg-commitment"
 version = "0.1.0"
+authors = ["CleanPegasus <me@cleanpegasus.dev>"]
+description = "A simple crate to perform KZG polynomial commitment scheme"
 edition = "2021"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
