@@ -160,6 +160,7 @@ mod tests {
 
     use super::KZGCommitment;
     use ark_bls12_381::{Fr as F, G1Affine, G2Affine};
+    use ark_ec::{AffineRepr, CurveGroup};
     use ark_poly::{polynomial, Polynomial};
     use rand::{prelude::SliceRandom, Rng};
 
@@ -168,10 +169,10 @@ mod tests {
         let vector = generate_random_vec();
         let polynomial = KZGCommitment::vector_to_polynomial(&vector);
         let random_points = random_points(&vector);
-        for point in random_points {
+        for (x, y) in random_points {
             assert_eq!(
-                polynomial.evaluate(&point.0),
-                point.1,
+                polynomial.evaluate(&x),
+                y,
                 "Vector interpolation is wrong"
             );
         }
@@ -209,13 +210,26 @@ mod tests {
       }
     }
 
+    #[test]
+    fn test_invalid_proof_verification() {
+        let kzg = KZGCommitment::new(50);
+        let vector = generate_random_vec();
+        let polynomial = KZGCommitment::vector_to_polynomial(&vector);
+        let commitment = kzg.commit_polynomial(&polynomial);
+
+        let invalid_vector = generate_random_vec();
+        let invalid_points = random_points(&invalid_vector);
+        let invalid_proof = (G1Affine::generator() * F::from(10)).into_affine();
+
+        let verification = kzg.verify_proof(&commitment, &invalid_points, &invalid_proof);
+
+        assert!(!verification, "The verification should be false");
+    }
+
     fn generate_random_vec() -> Vec<i32> {
         let mut rng = rand::thread_rng();
-
-        // Generate a random length between 1 and 20
         let length = rng.gen_range(1..=50);
         println!("Generating vector with length: {}", length);
-        // Generate the vector with random numbers
         (0..length).map(|_| rng.gen_range(-1000..=1000)).collect()
     }
 
