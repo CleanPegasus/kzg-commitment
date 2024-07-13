@@ -1,6 +1,6 @@
 [package]
 name = "kzg-commitment"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["CleanPegasus <me@cleanpegasus.dev>"]
 description = "A simple crate to perform KZG polynomial commitment scheme"
 edition = "2021"
