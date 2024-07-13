@@ -1,6 +1,6 @@
 [package]
 name = "kzg-commitment"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["CleanPegasus <me@cleanpegasus.dev>"]
 description = "A simple crate to perform KZG polynomial commitment scheme"
 edition = "2021"
@@ -17,3 +17,4 @@ ark-poly = "0.4.2"
 ark-ec = "0.4.2"
 rand = "0.8.5"
 derive_more = "0.99.17"
+num-bigint = "0.4.6"
