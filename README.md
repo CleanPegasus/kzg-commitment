@@ -21,14 +21,16 @@ kzg_commitment = "0.1.0"
 Here is a basic example of how to use the library:
 
 ```rust
+
 use kzg_commitment::KZGCommitment;
+use ark_bls12_381::{Fr as F};
 
 fn main() {
     let kzg = KZGCommitment::new(50);
-    let vector = vec![120, -15, 60, 80];
+    let vector = vec![F::from(120), F::from(-15), F::from(60), F::from(80)];
     let polynomial = KZGCommitment::vector_to_polynomial(&vector);
     let commitment = kzg.commit_polynomial(&polynomial);
-    let points = vec![(0, 120), (1, -15)];
+    let points = vec![(F::from(0), F::from(120)), (F::from(1), F::from(-15))];
     let proof = kzg.generate_proof(&polynomial, &random_points).unwrap();
     let verification = kzg.verify_proof(&commitment, &random_points, &proof);
 

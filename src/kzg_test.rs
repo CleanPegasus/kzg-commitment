@@ -75,22 +75,22 @@ mod tests {
         assert!(!verification, "The verification should be false");
     }
 
-    fn generate_random_vec() -> Vec<i32> {
+    fn generate_random_vec() -> Vec<F> {
         let mut rng = rand::thread_rng();
         let length = rng.gen_range(1..=50);
         println!("Generating vector with length: {}", length);
-        (0..length).map(|_| rng.gen_range(-1000..=1000)).collect()
+        (0..length).map(|_| F::from(rng.gen_range(-1000..=1000))).collect()
     }
 
-    fn random_points(vec: &Vec<i32>) -> Vec<(i32, i32)> {
+    fn random_points(vec: &Vec<F>) -> Vec<(F, F)> {
         let mut rng = rand::thread_rng();
         let count = rng.gen_range(1..vec.len());
         println!("Fetching {} points", count);
         vec.iter()
             .enumerate()
-            .collect::<Vec<(usize, &i32)>>()
+            .collect::<Vec<(usize, &F)>>()
             .choose_multiple(&mut rng, count)
-            .map(|&(index, item)| (index as i32, item.clone()))
+            .map(|&(index, item)| (F::from(index as u64), item.clone()))
             .collect()
     }
 }

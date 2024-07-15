@@ -6,13 +6,14 @@ use ark_ec::{
     short_weierstrass::Affine,
     AffineRepr, CurveGroup,
 };
-use ark_ff::{Field, UniformRand, Zero};
+use ark_ff::{Field, UniformRand, Zero, BigInteger256};
 use ark_poly::{
     polynomial,
     univariate::{DenseOrSparsePolynomial, DensePolynomial},
     DenseUVPolynomial, Polynomial,
 };
 use ark_std::{rand, One};
+// use num_traits::{Zero, One, FromPrimitive};
 
 use derive_more::Display;
 
@@ -73,7 +74,7 @@ impl KZGCommitment {
         (trusted_setup_g1, trusted_setup_g2)
     }
 
-    pub fn vector_to_polynomial(vector: &Vec<i32>) -> DensePolynomial<F> {
+    pub fn vector_to_polynomial(vector: &Vec<F>) -> DensePolynomial<F> {
         let y_s: Vec<F> = vector.iter().map(|&y| F::from(y)).collect();
         let x_s: Vec<F> = (0..vector.len()).map(|val| F::from(val as u32)).collect();
         let points: Vec<(F, F)> = x_s.into_iter().zip(y_s.into_iter()).collect();
@@ -107,7 +108,7 @@ impl KZGCommitment {
     pub fn generate_proof(
         &self,
         polynomial: &DensePolynomial<F>,
-        points: &Vec<(i32, i32)>,
+        points: &Vec<(F, F)>,
     ) -> Result<G1Affine, ProofError> {
         // lagrange interpolation
         let points_ff: Vec<(F, F)> = points.into_iter().map(|&(x, y)| (F::from(x), F::from(y))).collect();
@@ -132,7 +133,7 @@ impl KZGCommitment {
     pub fn verify_proof(
         &self,
         commitment: &G1Affine,
-        points: &Vec<(i32, i32)>,
+        points: &Vec<(F, F)>,
         proof: &G1Affine,
     ) -> bool {
         let points_ff: Vec<(F, F)> = points.into_iter().map(|&(x, y)| (F::from(x), F::from(y))).collect();
@@ -152,4 +153,14 @@ impl KZGCommitment {
 
         lhs == rhs
     }
+}
+
+pub trait IntoField: Clone {
+  fn into_ff(self) -> F;
+}
+
+impl IntoField for i32 {
+  fn into_ff(self) -> F {
+      F::from(self)
+  }
 }
