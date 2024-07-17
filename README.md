@@ -14,7 +14,7 @@ You can find the python version of this code [here](https://github.com/CleanPega
 ## Installation
 To use this library, add the following to your `Cargo.toml`
 ```toml
-kzg_commitment = "0.1.0"
+kzg_commitment = "0.1.3"
 ```
 
 ## Usage
@@ -51,7 +51,7 @@ cargo test
 - `test_invalid_proof_verification`: Tests the verification of an invalid proof and ensures the correct error is returned.
 
 ### TODO
-- [ ] Use BigInt for vectors instead of i32
+- [x] Use Finite Field for vectors instead of i32
 - [ ] Add support for precomputed powers_of_tau (trusted_setup)
 - [ ] Add more tests for invalid proof verification
 - [ ] Add benchmarks
