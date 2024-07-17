@@ -14,7 +14,7 @@ You can find the python version of this code [here](https://github.com/CleanPega
 ## Installation
 To use this library, add the following to your `Cargo.toml`
 ```toml
-kzg_commitment = "0.1.3"
+kzg-commitment = "0.1.3"
 ```
 
 ## Usage
